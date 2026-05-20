@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:        #0f1117;
+    --surface:   #181c27;
+    --surface2:  #1e2333;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.12);
+    --text:      #e8eaf0;
+    --muted:     #7a7f96;
+    --accent:    #4f8ef7;
+    --accent2:   #22d3a5;
+    --red:       #f05a5a;
+    --amber:     #f5a623;
+    --purple:    #9b7ff4;
+    --pink:      #f06292;
+    --font:      'DM Sans', sans-serif;
+    --mono:      'DM Mono', monospace;
+    --radius:    12px;
+    --radius-sm: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── layout ── */
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ── sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500; font-size: 15px; color: #fff;
+  }
+
+  .logo-text { font-size: 15px; font-weight: 500; letter-spacing: -.01em; }
+  .logo-text span { color: var(--muted); font-weight: 300; }
+
+  nav { display: flex; flex-direction: column; gap: 2px; }
+
+  .nav-section {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 1rem 0 .4rem .5rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: .55rem .75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s;
+    color: var(--muted);
+    font-size: 13.5px;
+    text-decoration: none;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,.12); color: var(--accent); }
+
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .avatar-sm {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: #fff; flex-shrink: 0;
+  }
+
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-role { font-size: 11px; color: var(--muted); }
+
+  /* ── main ── */
+  .main { padding: 2rem 2.25rem; overflow-x: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .page-title { font-size: 22px; font-weight: 500; letter-spacing: -.02em; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: .5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    transition: background .15s, border-color .15s;
+  }
+
+  .btn:hover { background: #252b3d; border-color: rgba(255,255,255,.18); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3a7de8; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; font-family: var(--mono);
+  }
+
+  .badge-green { background: rgba(34,211,165,.12); color: var(--accent2); }
+  .badge-red   { background: rgba(240,90,90,.12);  color: var(--red); }
+  .badge-amber { background: rgba(245,166,35,.12); color: var(--amber); }
+  .badge-blue  { background: rgba(79,142,247,.12); color: var(--accent); }
+
+  /* ── metric cards ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .mc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+
+  .mc:hover { border-color: var(--border2); }
+
+  .mc::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .mc.blue::before  { background: var(--accent); }
+  .mc.green::before { background: var(--accent2); }
+  .mc.red::before   { background: var(--red); }
+  .mc.amber::before { background: var(--amber); }
+  .mc.purple::before{ background: var(--purple); }
+
+  .mc-label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+  .mc-val   { font-size: 26px; font-weight: 500; letter-spacing: -.02em; line-height: 1; }
+  .mc-delta { font-size: 12px; margin-top: .5rem; display: flex; align-items: center; gap: 4px; }
+  .mc-delta.up { color: var(--accent2); }
+  .mc-delta.dn { color: var(--red); }
+
+  /* ── charts row ── */
+  .row2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .row-full { margin-bottom: 14px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.4rem;
+  }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .card-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    font-size: 11.5px; color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend b    { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+  /* ── bar rows ── */
+  .bar-row { margin-bottom: 11px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .bar-top span:last-child { color: var(--text); font-family: var(--mono); }
+  .bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 3px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+
+  /* ── status boxes ── */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .st-box {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: .8rem .9rem;
+  }
+
+  .st-val  { font-size: 22px; font-weight: 500; line-height: 1; font-family: var(--mono); }
+  .st-lbl  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .st-dot  { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: 1px; }
+
+  /* ── table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-size: 11px; font-family: var(--mono); text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted);
+    padding: .5rem .75rem; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: rgba(255,255,255,.02); }
+  tbody td {
+    padding: .7rem .75rem; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .emp-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar-xs {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500;
+  }
+
+  /* ── score bar ── */
+  .score-bar { display: flex; align-items: center; gap: 8px; }
+  .score-track { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .score-fill  { height: 100%; border-radius: 2px; }
+  .score-num   { font-size: 12px; font-family: var(--mono); color: var(--muted); min-width: 30px; }
+
+  /* ── doughnut center ── */
+  .donut-wrap { position: relative; }
+  .donut-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; pointer-events: none;
+  }
+  .donut-center .big { font-size: 22px; font-weight: 500; font-family: var(--mono); }
+  .donut-center .sm  { font-size: 10px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+  /* ── scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+  /* ── animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .mc    { animation: fadeUp .4s ease both; }
+  .mc:nth-child(1) { animation-delay: .05s; }
+  .mc:nth-child(2) { animation-delay: .10s; }
+  .mc:nth-child(3) { animation-delay: .15s; }
+  .mc:nth-child(4) { animation-delay: .20s; }
+  .mc:nth-child(5) { animation-delay: .25s; }
+  .card  { animation: fadeUp .45s .1s ease both; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">H</div>
+      <div>
+        <div class="logo-text">HR<span>Pulse</span></div>
+      </div>
+    </div>
+
+    <nav>
+      <div class="nav-section">Main</div>
+      <a class="nav-item active" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Employees
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Performance
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Attendance
+      </a>
+
+      <div class="nav-section">Reports</div>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Payroll
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar-sm">AM</div>
+        <div>
+          <div class="user-name">Ahmed Mostafa</div>
+          <div class="user-role">HR Manager</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">May 2025 &nbsp;·&nbsp; <span style="color:var(--accent2)">●</span> Live data</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          May 2025
+        </button>
+        <button class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="mc blue">
+        <div class="mc-label">Total employees</div>
+        <div class="mc-val">348</div>
+        <div class="mc-delta up">↑ +12 this month</div>
+      </div>
+      <div class="mc green">
+        <div class="mc-label">New hires</div>
+        <div class="mc-val">24</div>
+        <div class="mc-delta up">↑ +8 vs last month</div>
+      </div>
+      <div class="mc red">
+        <div class="mc-label">Turnover rate</div>
+        <div class="mc-val">4.2%</div>
+        <div class="mc-delta dn">↓ -1.1% improved</div>
+      </div>
+      <div class="mc amber">
+        <div class="mc-label">Avg tenure</div>
+        <div class="mc-val">3.4y</div>
+        <div class="mc-delta up">↑ +0.2y</div>
+      </div>
+      <div class="mc purple">
+        <div class="mc-label">Satisfaction</div>
+        <div class="mc-val">87%</div>
+        <div class="mc-delta up">↑ +3% this quarter</div>
+      </div>
+    </div>
+
+    <!-- Row 2: Headcount + Hiring trend -->
+    <div class="row2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Headcount by department</div>
+            <div class="card-sub">Current active employees</div>
+          </div>
+          <span class="badge badge-blue">May 2025</span>
+        </div>
+        <div class="legend">
+          <span><b style="background:#4f8ef7"></b>Engineering</span>
+          <span><b style="background:#22d3a5"></b>Sales</span>
+          <span><b style="background:#f5a623"></b>HR</span>
+          <span><b style="background:#f05a5a"></b>Marketing</span>
+          <span><b style="background:#7a7f96"></b>Operations</span>
+        </div>
+        <div style="position:relative;height:220px">
+          <canvas id="deptChart" role="img" aria-label="Bar chart of headcount by department">Engineering 110, Sales 85, HR 42, Marketing 61, Operations 50.</canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Hiring vs exits</div>
+            <div class="card-sub">Last 6 months</div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><b style="background:#4f8ef7"></b>Hires</span>
+          <span><b style="background:#f05a5a"></b>Exits — — —</span>
+        </div>
+        <div style="position:relative;height:220px">
+          <canvas id="hiringChart" role="img" aria-label="Line chart of hires vs exits over 6 months">Monthly trend from December to May.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Gender + Performance + Status -->
+    <div class="row3">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Gender distribution</div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><b style="background:#4f8ef7"></b>Male 54%</span>
+          <span><b style="background:#f06292"></b>Female 40%</span>
+        </div>
+        <div class="donut-wrap" style="position:relative;height:170px">
+          <canvas id="genderChart" role="img" aria-label="Donut chart of gender distribution">Male 54%, Female 40%</canvas>
+          <div class="donut-center">
+            <div class="big">348</div>
+            <div class="sm">total</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Department performance</div>
+            <div class="card-sub">Avg score this month</div>
+          </div>
+        </div>
+        <div style="padding-top:.4rem">
+          <div class="bar-row"><div class="bar-top"><span>Engineering</span><span>92%</span></div><div class="bar-track"><div class="bar-fill" style="width:92%;background:#4f8ef7"></div></div></div>
+          <div class="bar-row"><div class="bar-top"><span>HR</span><span>88%</span></div><div class="bar-track"><div class="bar-fill" style="width:88%;background:#9b7ff4"></div></div></div>
+          <div class="bar-row"><div class="bar-top"><span>Marketing</span><span>85%</span></div><div class="bar-track"><div class="bar-fill" style="width:85%;background:#f5a623"></div></div></div>
+          <div class="bar-row"><div class="bar-top"><span>Sales</span><span>78%</span></div><div class="bar-track"><div class="bar-fill" style="width:78%;background:#22d3a5"></div></div></div>
+          <div class="bar-row"><div class="bar-top"><span>Operations</span><span>71%</span></div><div class="bar-track"><div class="bar-fill" style="width:71%;background:#7a7f96"></div></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Employee status</div>
+          </div>
+        </div>
+        <div class="status-grid">
+          <div class="st-box">
+            <div class="st-val" style="color:#22d3a5">298</div>
+            <div class="st-lbl"><span class="st-dot" style="background:#22d3a5"></span>Active</div>
+          </div>
+          <div class="st-box">
+            <div class="st-val" style="color:#f5a623">18</div>
+            <div class="st-lbl"><span class="st-dot" style="background:#f5a623"></span>On leave</div>
+          </div>
+          <div class="st-box">
+            <div class="st-val" style="color:#4f8ef7">24</div>
+            <div class="st-lbl"><span class="st-dot" style="background:#4f8ef7"></span>Probation</div>
+          </div>
+          <div class="st-box">
+            <div class="st-val" style="color:#f05a5a">8</div>
+            <div class="st-lbl"><span class="st-dot" style="background:#f05a5a"></span>Notice</div>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <div style="position:relative;height:90px">
+            <canvas id="statusChart" role="img" aria-label="Area chart of employee status trend">Status trend over last 5 months.</canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Top performers table -->
+    <div class="card row-full">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Top performers — May 2025</div>
+          <div class="card-sub">Ranked by performance score</div>
+        </div>
+        <span class="badge badge-green">↑ Avg +6% vs last month</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Tenure</th>
+              <th>Status</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--muted);font-family:var(--mono)">01</td>
+              <td><div class="emp-cell"><div class="avatar-xs" style="background:rgba(79,142,247,.15);color:#4f8ef7">AM</div><div><div style="font-weight:500">Ahmed Mostafa</div><div style="font-size:11px;color:var(--muted)">Senior Developer</div></div></div></td>
+              <td><span class="badge badge-blue">Engineering</span></td>
+              <td style="color:var(--muted);font-family:var(--mono)">4.2y</td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:98%;background:#4f8ef7"></div></div><span class="score-num">98</span></div></td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted);font-family:var(--mono)">02</td>
+              <td><div class="emp-cell"><div class="avatar-xs" style="background:rgba(34,211,165,.15);color:#22d3a5">SH</div><div><div style="font-weight:500">Sara Hassan</div><div style="font-size:11px;color:var(--muted)">Account Manager</div></div></div></td>
+              <td><span class="badge badge-green" style="background:rgba(34,211,165,.12);color:#22d3a5">Sales</span></td>
+              <td style="color:var(--muted);font-family:var(--mono)">2.8y</td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:94%;background:#22d3a5"></div></div><span class="score-num">94</span></div></td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted);font-family:var(--mono)">03</td>
+              <td><div class="emp-cell"><div class="avatar-xs" style="background:rgba(245,166,35,.15);color:#f5a623">KA</div><div><div style="font-weight:500">Khaled Ali</div><div style="font-size:11px;color:var(--muted)">Marketing Lead</div></div></div></td>
+              <td><span class="badge badge-amber">Marketing</span></td>
+              <td style="color:var(--muted);font-family:var(--mono)">3.5y</td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:91%;background:#f5a623"></div></div><span class="score-num">91</span></div></td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted);font-family:var(--mono)">04</td>
+              <td><div class="emp-cell"><div class="avatar-xs" style="background:rgba(155,127,244,.15);color:#9b7ff4">NM</div><div><div style="font-weight:500">Nour Mohamed</div><div style="font-size:11px;color:var(--muted)">HR Specialist</div></div></div></td>
+              <td><span class="badge" style="background:rgba(155,127,244,.12);color:#9b7ff4">HR</span></td>
+              <td style="color:var(--muted);font-family:var(--mono)">1.9y</td>
+              <td><span class="badge badge-green">Active</span></td>
+              <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:89%;background:#9b7ff4"></div></div><span class="score-num">89</span></div></td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted);font-family:var(--mono)">05</td>
+              <td><div class="emp-cell"><div class="avatar-xs" style="background:rgba(240,90,90,.15);color:#f05a5a">MR</div><div><div style="font-weight:500">Mohamed Ragab</div><div style="font-size:11px;color:var(--muted)">Operations Mgr</div></div></div></td>
+              <td><span class="badge badge-red" style="background:rgba(240,90,90,.12);color:#f05a5a">Operations</span></td>
+              <td style="color:var(--muted);font-family:var(--mono)">5.1y</td>
+              <td><span class="badge badge-amber">On leave</span></td>
+              <td><div class="score-bar"><div class="score-track"><div class="score-fill" style="width:86%;background:#f05a5a"></div></div><span class="score-num">86</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const gridC = 'rgba(255,255,255,0.06)';
+const txtC  = '#7a7f96';
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Engineering','Sales','HR','Marketing','Operations'],
+    datasets: [{
+      label: 'Headcount',
+      data: [110, 85, 42, 61, 50],
+      backgroundColor: ['#4f8ef7','#22d3a5','#f5a623','#f05a5a','#7a7f96'],
+      borderRadius: 6,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw} employees` } } },
+    scales: {
+      x: { ticks: { color: txtC, font: { size: 11 } }, grid: { display: false }, border: { display: false } },
+      y: { ticks: { color: txtC, font: { size: 11 } }, grid: { color: gridC }, border: { display: false }, beginAtZero: true }
+    }
+  }
+});
+
+new Chart(document.getElementById('hiringChart'), {
+  type: 'line',
+  data: {
+    labels: ['Dec','Jan','Feb','Mar','Apr','May'],
+    datasets: [
+      {
+        label: 'Hires',
+        data: [18,22,19,26,21,24],
+        borderColor: '#4f8ef7',
+        backgroundColor: 'rgba(79,142,247,0.08)',
+        tension: .4, fill: true,
+        pointRadius: 4, pointBackgroundColor: '#4f8ef7',
+        borderDash: []
+      },
+      {
+        label: 'Exits',
+        data: [12,9,14,8,11,7],
+        borderColor: '#f05a5a',
+        backgroundColor: 'rgba(240,90,90,0.06)',
+        tension: .4, fill: true,
+        pointRadius: 4, pointBackgroundColor: '#f05a5a',
+        borderDash: [5,3]
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: txtC, font: { size: 11 } }, grid: { display: false }, border: { display: false } },
+      y: { ticks: { color: txtC, font: { size: 11 } }, grid: { color: gridC }, border: { display: false }, beginAtZero: true }
+    }
+  }
+});
+
+new Chart(document.getElementById('genderChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Male','Female'],
+    datasets: [{
+      data: [54, 40],
+      backgroundColor: ['#4f8ef7','#f06292'],
+      borderWidth: 0,
+      hoverOffset: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw}%` } } }
+  }
+});
+
+new Chart(document.getElementById('statusChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May'],
+    datasets: [{
+      label: 'Active',
+      data: [280, 288, 292, 295, 298],
+      borderColor: '#22d3a5',
+      backgroundColor: 'rgba(34,211,165,0.08)',
+      tension: .4, fill: true,
+      pointRadius: 0,
+      borderWidth: 1.5
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: { display: false },
+      y: { display: false, beginAtZero: false }
+    }
+  }
+});
+</script>
+</body>
+</html>
